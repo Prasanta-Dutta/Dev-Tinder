@@ -1,32 +1,15 @@
 const express = require("express");
-const { PORT, TOKEN_SECRET } = require("./constants");
+const { PORT } = require("./constants");
 const { connectDB } = require("./utils");
 const { Users } = require("./models");
 const validator = require("validator");
 const bcrypt = require("bcrypt");
 const cookieParser = require("cookie-parser");
-const jwt = require("jsonwebtoken");
+const { auth, signinInputSanitize } = require("./middlewares");
 
 const app = express();
-
 app.use(express.json());
 app.use(cookieParser());
-
-app.post("/user/api/V0/signupdummy", async (req, res, next) => {
-    console.log("API hited");
-    const dummyData = {
-        firstName: "Dummy",
-        lastName: "Data",
-        email: "dummy5@data.com",
-        password: "dummy@321"
-    };
-
-    const user = new Users(dummyData);
-    const result = await user.save();
-    console.log(result);
-
-    res.send("User created successfully");
-});
 
 app.post("/user/api/V0/signup", async (req, res, next) => {
     try {
@@ -73,37 +56,17 @@ app.post("/user/api/V0/signup", async (req, res, next) => {
     }
 });
 
-app.post("/user/api/V0/signin", async (req, res) => {
+app.post("/user/api/V0/signin", signinInputSanitize, async (req, res) => {
     try {
-        // Data sanitization like, trim(), validate email, mobile
-        for (const key in req.body) {
-            if (typeof (req.body[key]) === "string") {
-                req.body[key] = req.body[key].trim();
-            }
-        }
-
         const { email, password } = req.body;
+        const user = await Users.findOne({ email });
 
-        if ([email, password].some((value) => {
-            return value === undefined || value === "" || value === null;
-        })) {
-            return res.send("Email or password can not be empty");
-        }
-
-        if (!validator.isEmail(email)) {
-            return res.send("Invalid email");
-        }
-
-        // Fetch user data through email
-        const isUserExisted = await Users.findOne({ email });
-        if (!isUserExisted) {
+        if (!user) {
             return res.send("Invalid credential");
         }
 
-        if (await bcrypt.compare(password, isUserExisted.password)) {
-            // res.cookie("token", "GJSGDSBIBKADNLKJSVNKKAC");
-            const token = await jwt.sign({ _id: isUserExisted._id }, TOKEN_SECRET);
-            console.log(token);
+        if (await user.comparePassword(password)) {
+            const token = await user.generateJWT();
             res.cookie("userAuthenticationToken", token);
             return res.send("Login successful");
         }
@@ -116,18 +79,9 @@ app.post("/user/api/V0/signin", async (req, res) => {
     }
 });
 
-app.patch("/user/api/V0/profile", async (req, res) => {
+app.patch("/user/api/V0/profile", auth, async (req, res) => {
     try {
-        const cookie = req.cookies;
-        console.log(cookie);
-
-        if (cookie.userAuthenticationToken) {
-            const decodeToken = jwt.verify(cookie.userAuthenticationToken, TOKEN_SECRET);
-            console.log(decodeToken);
-            return res.send("Reading cookie...");
-        }
-
-        return res.send("Token expired");
+        return res.send(req.user);  //  Not check bcs if token not found then this middleware will never call
     }
     catch (err) {
         return res.send("Error: " + err.message);
