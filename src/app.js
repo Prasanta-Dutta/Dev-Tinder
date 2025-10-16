@@ -2,46 +2,24 @@ const express = require("express");
 const { PORT } = require("./constants");
 const { connectDB } = require("./utils");
 const { Users } = require("./models");
-const validator = require("validator");
 const bcrypt = require("bcrypt");
 const cookieParser = require("cookie-parser");
-const { auth, signinInputSanitize } = require("./middlewares");
+const { auth, signinInputSanitize, signupInputSanitize } = require("./middlewares");
 
 const app = express();
 app.use(express.json());
 app.use(cookieParser());
 
-app.post("/user/api/V0/signup", async (req, res, next) => {
+app.post("/user/api/V0/signup", signupInputSanitize, async (req, res, next) => {
     try {
-        for (const key in req.body) {
-            if (typeof (req.body[key]) === "string") {
-                req.body[key] = req.body[key].trim();
-            }
-        }
-
         const { firstName, lastName, email, mobile, gender, age, password } = req.body;
-
-        if ([firstName, lastName, email, mobile, age, password].some((value) => {
-            return value === undefined || value === ""
-        })) {
-            return res.send("All filds are required");
-        }
-
-        if (!validator.isEmail(email)) {
-            return res.send("Email is not valid");
-        }
-
-        if (!validator.isMobilePhone(mobile + "")) {
-            return res.send("Mobile is not valid");
-        }
-
         const isUserExist = await Users.findOne({ email });
 
         if (isUserExist) {
             return res.send("User already exist"); // Invalid cradentials
         }
 
-        const hashedPassword = await bcrypt.hash(password, 9);
+        const hashedPassword = await Users.generateHashPassword(password);
 
         const user = new Users({ firstName, lastName, email, mobile, gender, age, password: hashedPassword });
         const result = await user.save();
