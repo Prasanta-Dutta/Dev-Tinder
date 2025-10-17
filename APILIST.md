@@ -8,7 +8,7 @@
 ## ProfileRouter
 - GET /profile/view
 - PATCH /profile/edit
-- PATCH /profile/forgot
+- PATCH /profile/change/password
 
 ## RequestRouter
 - GET /request/send/:UserId        - view all request send by user

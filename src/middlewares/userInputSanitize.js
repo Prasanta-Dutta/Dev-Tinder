@@ -59,7 +59,71 @@ const signupInputSanitize = (req, res, next) => {
     }
 };
 
+const profileEditInputSanitize = (req, res, next) => {
+    try {
+        for (const key in req.body) {
+            if (typeof (req.body[key]) === "string") {
+                req.body[key] = req.body[key].trim();
+            }
+        }
+
+        const allowedFields = ["firstName", "lastName", "age", "gender", "mobile", "institutions", "skills", "about"];
+        const updatedFields = Object.keys(req.body).filter((field) => {
+            return allowedFields.includes(field);
+        });
+
+        if (updatedFields.includes("mobile") && !validator.isMobilePhone(req.body.mobile + "")) {
+            return res.send("Mobile is not valid");
+        }
+
+        req["updatedUser"] = {};
+
+        updatedFields.forEach((field) => {
+            req["updatedUser"][`${field}`] = req.body[`${field}`];
+        });
+
+        next();
+    }
+    catch (err) {
+        return res.send("Error: " + err.message);
+    }
+}
+
+const changePasswordDataSanitize = (req, res, next) => {
+    try {
+        const allowedFields = ["existingPassword", "newPassword", "confirmPassword"];
+
+        for (const key in req.body) {
+            if (allowedFields.includes(key) && typeof (req.body[key]) !== "string") {
+                return res.send("All field should be string only");
+            }
+            else{
+                req.body[key] = req.body[key].trim();
+            }
+        }
+
+        const { existingPassword, newPassword, confirmPassword } = req.body;
+
+        if ([existingPassword, newPassword, confirmPassword].some((field) => {
+            return field === undefined || field === "" || field === null;
+        })) {
+            return res.send("All field are required");
+        }
+
+        if(newPassword !== confirmPassword){
+            return res.send("New & confirm password should be same");
+        }
+
+        next();
+    }
+    catch (err) {
+        res.send("Error: " + err.message);
+    }
+};
+
 module.exports = {
     signinInputSanitize,
-    signupInputSanitize
+    signupInputSanitize,
+    profileEditInputSanitize,
+    changePasswordDataSanitize
 };

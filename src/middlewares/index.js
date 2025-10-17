@@ -1,8 +1,9 @@
-const { auth } = require("./auth");
-const { signinInputSanitize, signupInputSanitize } = require("./userInputSanitize");
+const { userAuth } = require("./userAuth");
+const { signinInputSanitize, signupInputSanitize, profileEditInputSanitize } = require("./userInputSanitize");
 
 module.exports = {
-    auth,
+    userAuth,
     signinInputSanitize,
-    signupInputSanitize
+    signupInputSanitize,
+    profileEditInputSanitize
 };

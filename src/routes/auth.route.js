@@ -56,8 +56,9 @@ authRouter.post("/api/V0/logout", async (req, res) => {
             return res.send("User already logged out");
         }
         else{
-            res.clearCookie("userAuthenticationToken");
-            return res.send("User logged out successfully");
+            return res
+            .clearCookie("userAuthenticationToken")
+            .send("User logged out successfully");
         }
     }
     catch (err) {

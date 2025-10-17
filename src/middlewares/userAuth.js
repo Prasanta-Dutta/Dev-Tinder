@@ -2,7 +2,7 @@ const { JWT_SECRET } = require("../constants");
 const jwt = require("jsonwebtoken");
 const { Users } = require("../models");
 
-const auth = async (req, res, next) => {
+const userAuth = async (req, res, next) => {
     try{
         const cookie = req.cookies;
         
@@ -29,5 +29,5 @@ const auth = async (req, res, next) => {
 };
 
 module.exports = {
-    auth
+    userAuth
 };
