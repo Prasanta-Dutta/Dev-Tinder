@@ -4,7 +4,7 @@ const { Users, ConnectionRequests } = require("../models");
 const { default: mongoose } = require("mongoose");
 const connectionRequestRouter = express.Router();
 
-connectionRequestRouter.post("/api/V0/request/:requestType/:toUserId", userAuth, async (req, res, next) => {
+connectionRequestRouter.post("/api/V0/request/send/:requestType/:toUserId", userAuth, async (req, res) => {
     try {
         const fromUserId = req.user._id;
         const toUserId = req.params.toUserId;
@@ -48,6 +48,48 @@ connectionRequestRouter.post("/api/V0/request/:requestType/:toUserId", userAuth,
         return res.send("Error: " + err.message);
     }
 });
+
+connectionRequestRouter.post("/api/V0/request/review/:requestType/:requestId", userAuth, async (req, res) => {
+    try{
+        // loggedinId -> toUserId, to whome the request has send
+        // requestId -> connectionRequest Id
+        // status -> interested
+
+        // Suppose Akshay send/interested on Elon
+        // Akshay -> fromUserId
+        // Elon -> toUserId -> loggedin Id
+
+        const toUserId = req.user._id;
+        const {requestType, requestId} = req.params;
+        const allowedStatus = ["accepted", "rejected", "blocked"];
+
+        // console.log(requestType);
+        // console.log(requestId);
+
+        // return res.send("Accepting...");
+
+        if(!allowedStatus.includes(requestType)){
+            return res.send("Invalid request type");
+        }
+
+        const request = await ConnectionRequests.findOne({
+            _id: requestId,
+            toUserId,
+            status: "interested",
+        });
+
+        if(!request){
+            return res.send("Trying to accept invalid request");
+        }
+
+        request.status = requestType;
+        await request.save();
+        return res.send(request);
+    }
+    catch (err){
+        return res.send("Error: " + err.message);
+    }
+})
 
 module.exports = {
     connectionRequestRouter

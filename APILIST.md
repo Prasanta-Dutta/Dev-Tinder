@@ -15,7 +15,5 @@
 - GET /request/received/:UserId    - view all request come to user
 
 ## RequestStatusRouter
-- POST /request/status/pending
-- POST /request/status/accepted
-- POST /request/status/rejected
-- POST /request/status/blocked
+- POST /request/send/:status/:toUserId      - ignored, interested
+- POST /request/review/:status/:toUserId    - accepted, rejected, blocked
