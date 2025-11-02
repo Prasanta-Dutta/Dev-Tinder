@@ -1,9 +1,10 @@
 const express = require("express");
 const { userAuth } = require("../middlewares");
-const { ConnectionRequests } = require("../models");
+const { ConnectionRequests, Users } = require("../models");
+const { set } = require("mongoose");
 const userRouter = express.Router();
 
-userRouter.get("/api/V0/requests/received", userAuth, async (req, res, next) => {
+userRouter.get("/api/V0/requests/received", userAuth, async (req, res) => {
     try {
         const userId = req.user._id;
         const requests = await ConnectionRequests.find({
@@ -18,7 +19,7 @@ userRouter.get("/api/V0/requests/received", userAuth, async (req, res, next) => 
     }
 });
 
-userRouter.get("/api/V0/connections", userAuth, async (req, res, next) => {
+userRouter.get("/api/V0/connections", userAuth, async (req, res) => {
     try {
         const userId = req.user._id;
         const connections = await ConnectionRequests.find({
@@ -44,6 +45,42 @@ userRouter.get("/api/V0/connections", userAuth, async (req, res, next) => {
     catch (err) {
         return res.send("Error: " + err.message);
     }
+});
+
+userRouter.get("/api/V0/feed", userAuth, async (req, res) => {
+    // Building feed page for Elon, ignored
+    // 1. Elon does not send request already
+    // 2. Anybody send request to Elon -> these are shown in /review
+    // 3. Elon is already connected/accepted
+    // 4. Elon is ignored by someone
+    // 5. Elon is rejected
+    // 6. Elon can not send request to itself
+    // So basically any entry created in connectionRequest Schema are not coming to Elon
+
+    const loggedinUserId = req.user._id;
+    const allRequest = await ConnectionRequests.find({
+        $or: [
+            {fromUserId: loggedinUserId},
+            {toUserId: loggedinUserId}
+        ]
+    }).select("fromUserId toUserId");
+
+    let filteredUser = new Set();
+    allRequest.forEach((req) => {
+        filteredUser.add(req.fromUserId.toString());
+        filteredUser.add(req.toUserId.toString());
+    });
+    filteredUser = Array.from(filteredUser);
+
+    const allowedUser = await Users.find({
+        $and: [
+            {_id: {$nin: filteredUser}},
+            {_id: {$ne: loggedinUserId}}
+        ]
+    }).select("firstName lastName");
+
+    return res.send(allowedUser);
+
 });
 
 module.exports = { userRouter };
