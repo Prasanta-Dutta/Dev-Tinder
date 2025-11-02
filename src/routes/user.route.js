@@ -58,8 +58,9 @@ userRouter.get("/api/V0/feed", userAuth, async (req, res) => {
     // So basically any entry created in connectionRequest Schema are not coming to Elon
 
     const loggedinUserId = req.user._id;
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 3;
+    const page = parseInt(req.query.page) >= 0 ? parseInt(req.query.page) : 1;
+    const limit = parseInt(req.query.limit) >= 0 && parseInt(req.query.limit) <= 10 ? parseInt(req.query.limit) : 3;
+    
     const allRequest = await ConnectionRequests.find({
         $or: [
             {fromUserId: loggedinUserId},
