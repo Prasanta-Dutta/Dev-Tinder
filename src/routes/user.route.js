@@ -59,7 +59,7 @@ userRouter.get("/api/V0/feed", userAuth, async (req, res) => {
 
     const loggedinUserId = req.user._id;
     const page = parseInt(req.query.page) >= 0 ? parseInt(req.query.page) : 1;
-    const limit = parseInt(req.query.limit) >= 0 && parseInt(req.query.limit) <= 10 ? parseInt(req.query.limit) : 3;
+    const limit = parseInt(req.query.limit) >= 0 && parseInt(req.query.limit) <= 10 ? parseInt(req.query.limit) : 10;
     
     const allRequest = await ConnectionRequests.find({
         $or: [
@@ -68,25 +68,22 @@ userRouter.get("/api/V0/feed", userAuth, async (req, res) => {
         ]
     }).select("fromUserId toUserId");
 
-    let filteredUser = new Set();
+    let filteredUser = new Set([loggedinUserId.toString()]);
     allRequest.forEach((req) => {
-        filteredUser.add(req.fromUserId.toString());
-        filteredUser.add(req.toUserId.toString());
+        req.fromUserId.toString() === loggedinUserId.toString()
+        ? filteredUser.add(req.toUserId.toString())
+        : filteredUser.add(req.fromUserId.toString());
     });
     filteredUser = Array.from(filteredUser);
 
     const allowedUser = await Users.find({
-        $and: [
-            {_id: {$nin: filteredUser}},
-            {_id: {$ne: loggedinUserId}}
-        ]
+        _id: {$nin: filteredUser}
     })
     .select("firstName lastName")
     .skip((page-1)*limit)
     .limit(limit);
 
     return res.send(allowedUser);
-
 });
 
 module.exports = { userRouter };
